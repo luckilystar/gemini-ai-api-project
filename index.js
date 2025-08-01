@@ -19,17 +19,72 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+// 1.Generate From Text
 app.post('/generate-text', async (req, res) => {
     try {
         const { prompt } = req.body;
         if (!prompt) {
             return res.status(400).json({ error: 'Prompt is required' });
         }
-        const response = await ai.models.generateContent({
+        const resp = await ai.models.generateContent({
             model: GEMINI_MODEL,
             contents: prompt
         });
-        res.json({ result: extractText(response) });
+        res.json({ result: extractText(resp) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 2.Generate From Image
+app.post('/generate-from-image', upload.single('image'), async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        const imageBase64 = req.file ? req.file.buffer.toString('base64') : null;
+        const resp = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt },
+                { inlineData: { mimeType: req.file.mimetype, data: imageBase64 } }
+            ]
+        });
+        res.json({ result: extractText(resp) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 3.Generate From Document
+app.post('/generate-from-document', upload.single('document'), async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        const documentBase64 = req.file ? req.file.buffer.toString('base64') : null;
+        const resp = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt || "Ringkas dokumen berikut:" },
+                { inlineData: { mimeType: req.file.mimetype, data: documentBase64 } }
+            ]
+        });
+        res.json({ result: extractText(resp) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 4. Generate From Audio
+app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
+    try {
+        const {prompt} = req.body;
+        const audioBase64 = req.file ? req.file.buffer.toString('base64') : null;
+        const resp = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt || "Transkrip audio berikut:" },
+                { inlineData: { mimeType: req.file.mimetype, data: audioBase64 } }
+            ]
+        });
+        res.json({ result: extractText(resp) });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

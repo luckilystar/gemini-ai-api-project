@@ -15,6 +15,39 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+});
+
+app.post('/generate-text', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: 'Prompt is required' });
+        }
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: prompt
+        });
+        res.json({ result: extractText(response) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server listening at http://localhost:${PORT}`);
 });
+
+function extractText(response) {
+    try {
+        const text =
+            response?.response?.candidates?.[0]?.content?.parts?.[0]?.text ??
+            response?.candidates?.[0]?.content?.parts?.[0]?.text ??
+            response?.response?.candidates?.[0]?.content?.text;
+        return text ?? JSON.stringify(response, null, 2);
+    } catch (error) {
+        console.error('Error extracting text:', error);
+        return text ?? JSON.stringify(response, null, 2);
+    }
+}
